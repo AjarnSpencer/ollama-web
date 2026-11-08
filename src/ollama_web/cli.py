@@ -3,6 +3,7 @@ Main CLI entrypoint for ollama-web (oweb).
 """
 
 import os
+import re
 import sys
 import json
 import argparse
@@ -35,6 +36,7 @@ SYSTEM_PROMPT = (
     "You are an intelligent AI assistant running locally via Ollama with live internet search "
     "and webpage scraping capabilities. Always extract and present concrete facts, dates, headlines, "
     "match fixtures, scores, and markdown tables directly from the retrieved web content. "
+    "Prioritize current, recent developments (2024-2026) over outdated historical events when responding to news queries. "
     "Never tell the user to 'visit the website' instead of answering. "
     "If the user asks for a 'resume' of articles or data, they mean a summary or synopsis."
 )
@@ -50,13 +52,16 @@ def query_ollama(
     speak_enabled: bool = False
 ) -> str:
     user_prompt = sanitize_terminal_input(user_prompt)
+    is_piped = not sys.stdout.isatty()
 
     # 1. Scrape any explicit URLs in the prompt
-    import re
     explicit_urls = re.findall(r"https?://[^\s)>\]\"']+", user_prompt)
     scraped_explicit = []
     for u in explicit_urls[:4]:
-        print(f"{C_CYAN}📄 Fetching URL:{C_RESET} {u} ...", flush=True)
+        if not is_piped:
+            print(f"{C_CYAN}📄 Fetching URL:{C_RESET} {u} ...", file=sys.stderr, flush=True)
+        else:
+            print(f"📄 Fetching URL: {u} ...", file=sys.stderr, flush=True)
         scraped_explicit.append(fetch_url_text(u, max_chars=7500))
 
     augmented_sections = []
@@ -92,7 +97,10 @@ def query_ollama(
     if "thinking" in caps:
         payload["think"] = bool(enable_thinking)
 
-    print(f"\n{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} {C_DIM}(evaluating context & generating...){C_RESET}", end="", flush=True)
+    if not is_piped:
+        sys.stderr.write(f"\n{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} {C_DIM}(evaluating context & generating...){C_RESET}")
+        sys.stderr.flush()
+
     status_cleared = False
     full_reply = []
 
@@ -106,28 +114,31 @@ def query_ollama(
                 token = chunk.get("message", {}).get("content", "")
                 if token:
                     if not status_cleared:
-                        sys.stdout.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
-                        sys.stdout.flush()
+                        if not is_piped:
+                            sys.stderr.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
+                            sys.stderr.flush()
                         status_cleared = True
-                    print(token, end="", flush=True)
+                    sys.stdout.write(token)
+                    sys.stdout.flush()
                     full_reply.append(token)
                 if chunk.get("done"):
                     break
     except KeyboardInterrupt:
-        if not status_cleared:
-            sys.stdout.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
-            sys.stdout.flush()
-        print(f"\n{C_YELLOW}[Generation interrupted]{C_RESET}")
+        if not status_cleared and not is_piped:
+            sys.stderr.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
+            sys.stderr.flush()
+        print(f"\n{C_YELLOW}[Generation interrupted]{C_RESET}", file=sys.stderr)
     except Exception as e:
-        if not status_cleared:
-            sys.stdout.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
-            sys.stdout.flush()
+        if not status_cleared and not is_piped:
+            sys.stderr.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
+            sys.stderr.flush()
         err_msg = f"Ollama error: {e}"
-        print(f"\n{C_YELLOW}[!] {err_msg}{C_RESET}")
+        print(f"\n{C_YELLOW}[!] {err_msg}{C_RESET}", file=sys.stderr)
         if speak_enabled:
             speak_text(f"Ollama error on model {model}. {e}")
 
-    print("\n", flush=True)
+    sys.stdout.write("\n")
+    sys.stdout.flush()
     reply_str = "".join(full_reply).strip()
 
     if reply_str:
@@ -181,17 +192,39 @@ def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool 
                 print(f"{C_GREEN}Spoken output: {'ENABLED (ollama-speak)' if speak_enabled else 'DISABLED'}{C_RESET}\n")
                 continue
 
+            # 1. Clean accidental CLI invocations pasted into the REPL
+            pipe_speak = bool(re.search(r'\|\s*(?:ollama-speak|ospeak|speak)\s*$', prompt, re.IGNORECASE))
+            prompt = re.sub(r'\|\s*(?:ollama-speak|ospeak|speak)\s*$', '', prompt).strip()
+            prompt = re.sub(r'^(?:ollama-web|oweb)\s+', '', prompt).strip()
+
+            model_flag_match = re.match(r'^-m\s+(\S+)\s+(.*)$', prompt)
+            if model_flag_match:
+                req_model = model_flag_match.group(1).strip()
+                resolved = resolve_model_name(req_model)
+                if resolved:
+                    model = resolved
+                    print(f"{C_GREEN}Switched model to: {model}{C_RESET}\n")
+                prompt = model_flag_match.group(2).strip()
+
+            if (prompt.startswith('"') and prompt.endswith('"')) or (prompt.startswith("'") and prompt.endswith("'")):
+                prompt = prompt[1:-1].strip()
+
+            if not prompt:
+                continue
+
             # Check quote guardrails
             warnings = check_syntax_guardrails(prompt)
             for w in warnings:
                 print(f"{C_YELLOW}[!] Warning: {w}{C_RESET}")
+
+            current_speak = speak_enabled or pipe_speak
 
             query_ollama(
                 model=model,
                 user_prompt=prompt,
                 history=history,
                 search_mode=search_mode,
-                speak_enabled=speak_enabled
+                speak_enabled=current_speak
             )
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
@@ -203,7 +236,7 @@ def main():
 
     parser = argparse.ArgumentParser(
         prog="ollama-web",
-        description="Universal live web search, deep table scraping, and voice CLI/proxy for Ollama."
+        description="Universal live web search, deep table scraping, and desktop GUI proxy daemon for Ollama."
     )
     parser.add_argument("-m", "--model", default=None, help="Ollama model name or substring")
     parser.add_argument("--proxy", action="store_true", help="Run as transparent GUI proxy daemon on localhost:11435")
@@ -267,16 +300,23 @@ def main():
     if not model_name and config.get("default_model"):
         model_name = resolve_model_name(config["default_model"])
 
-    # 4. Interactive first-run selection if model is still unspecified
+    # 4. First-run selection if model is still unspecified
     if not model_name:
         local_models = get_local_models()
-        chosen = prompt_interactive_model_selection(local_models)
-        if not chosen:
+        if not local_models:
+            print(f"[!] No local Ollama models found at {OLLAMA_HOST}.", file=sys.stderr)
+            print("Please download a model first using: ollama run llama3.1 (or gemma2, qwen2.5)", file=sys.stderr)
             sys.exit(1)
-        model_name = chosen
-        config["default_model"] = model_name
-        config["first_run_completed"] = True
-        save_config(config)
+        if not sys.stdin.isatty():
+            model_name = local_models[0]["name"]
+        else:
+            chosen = prompt_interactive_model_selection(local_models)
+            if not chosen:
+                sys.exit(1)
+            model_name = chosen
+            config["default_model"] = model_name
+            config["first_run_completed"] = True
+            save_config(config)
 
     speak_enabled = args.speak or config.get("speak_enabled", False)
 
@@ -284,7 +324,7 @@ def main():
     if prompt_parts:
         raw_combined = " ".join(args.prompt)
         for w in check_syntax_guardrails(raw_combined):
-            print(f"{C_YELLOW}[!] Warning: {w}{C_RESET}")
+            print(f"{C_YELLOW}[!] Warning: {w}{C_RESET}", file=sys.stderr)
 
         user_prompt = " ".join(prompt_parts)
         history = [{"role": "system", "content": SYSTEM_PROMPT}]
