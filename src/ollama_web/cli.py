@@ -47,8 +47,7 @@ def query_ollama(
     search_mode: str = "auto",
     enable_thinking: bool = False,
     max_results: int = 5,
-    speak_enabled: bool = True,
-    voice_engine: str = "edge"
+    speak_enabled: bool = False
 ) -> str:
     user_prompt = sanitize_terminal_input(user_prompt)
 
@@ -126,7 +125,7 @@ def query_ollama(
         err_msg = f"Ollama error: {e}"
         print(f"\n{C_YELLOW}[!] {err_msg}{C_RESET}")
         if speak_enabled:
-            speak_text(f"Ollama error on model {model}. {e}", engine=voice_engine)
+            speak_text(f"Ollama error on model {model}. {e}")
 
     print("\n", flush=True)
     reply_str = "".join(full_reply).strip()
@@ -135,18 +134,18 @@ def query_ollama(
         history.append({"role": "user", "content": user_prompt})
         history.append({"role": "assistant", "content": reply_str})
         if speak_enabled:
-            speak_text(reply_str, engine=voice_engine)
+            speak_text(reply_str)
 
     return reply_str
 
 
-def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = True, voice_engine: str = "edge"):
+def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = False):
     caps = get_model_capabilities(model)
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}")
     print(f"{C_BOLD} 🌐 ollama-web Interactive Terminal ({model}){C_RESET}")
     print(f" Web Search : {C_GREEN}{search_mode.upper()}{C_RESET}")
-    print(f" Voice TTS  : {C_GREEN}{'ON (' + voice_engine + ')' if speak_enabled else 'OFF'}{C_RESET}")
-    print(f" Commands   : {C_YELLOW}/model <name>{C_RESET}, {C_YELLOW}/models{C_RESET}, {C_YELLOW}/search <q>{C_RESET}, {C_YELLOW}/voice{C_RESET}, {C_YELLOW}/clear{C_RESET}, {C_YELLOW}/exit{C_RESET}")
+    print(f" Voice TTS  : {C_GREEN}{'ON (ollama-speak)' if speak_enabled else 'OFF'}{C_RESET}")
+    print(f" Commands   : {C_YELLOW}/model <name>{C_RESET}, {C_YELLOW}/models{C_RESET}, {C_YELLOW}/search <q>{C_RESET}, {C_YELLOW}/speak{C_RESET}, {C_YELLOW}/clear{C_RESET}, {C_YELLOW}/exit{C_RESET}")
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}\n")
 
     history = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -177,9 +176,9 @@ def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool 
                 else:
                     print(f"{C_YELLOW}Model '{req}' not found.{C_RESET}\n")
                 continue
-            if prompt == "/voice":
+            if prompt in ("/speak", "/voice"):
                 speak_enabled = not speak_enabled
-                print(f"{C_GREEN}Voice output: {'ENABLED' if speak_enabled else 'MUTED'}{C_RESET}\n")
+                print(f"{C_GREEN}Spoken output: {'ENABLED (ollama-speak)' if speak_enabled else 'DISABLED'}{C_RESET}\n")
                 continue
 
             # Check quote guardrails
@@ -192,8 +191,7 @@ def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool 
                 user_prompt=prompt,
                 history=history,
                 search_mode=search_mode,
-                speak_enabled=speak_enabled,
-                voice_engine=voice_engine
+                speak_enabled=speak_enabled
             )
         except (KeyboardInterrupt, EOFError):
             print("\nExiting.")
@@ -213,9 +211,7 @@ def main():
     parser.add_argument("--mcp", action="store_true", help="Run as Model Context Protocol (MCP) stdio server")
     parser.add_argument("--list-models", "-l", action="store_true", help="List available local Ollama models")
     parser.add_argument("--no-search", action="store_true", help="Disable automatic live web search")
-    parser.add_argument("--mute", "-q", action="store_true", help="Mute spoken audio output")
-    parser.add_argument("--local-voice", action="store_true", help="Use local voice engine (Kokoro/Piper/ai-say) instead of default Edge-TTS")
-    parser.add_argument("--voice-engine", default=None, choices=["edge", "local", "kokoro", "piper", "off"], help="Select voice engine (default: edge)")
+    parser.add_argument("--speak", "-s", action="store_true", help="Speak response aloud via companion ollama-speak")
     parser.add_argument("--think", action="store_true", help="Enable reasoning thinking output if supported")
     parser.add_argument("prompt", nargs="*", help="Model name and/or search query")
 
@@ -282,17 +278,7 @@ def main():
         config["first_run_completed"] = True
         save_config(config)
 
-    if args.mute or args.voice_engine == "off":
-        speak_enabled = False
-        voice_engine = "off"
-    else:
-        speak_enabled = config.get("voice_enabled", True)
-        if args.local_voice:
-            voice_engine = "local"
-        elif args.voice_engine:
-            voice_engine = args.voice_engine
-        else:
-            voice_engine = config.get("voice_engine", "edge")
+    speak_enabled = args.speak or config.get("speak_enabled", False)
 
     # Proactive quote warnings on single-turn prompt
     if prompt_parts:
@@ -308,15 +294,13 @@ def main():
             history=history,
             search_mode=search_mode,
             enable_thinking=args.think,
-            speak_enabled=speak_enabled,
-            voice_engine=voice_engine
+            speak_enabled=speak_enabled
         )
     else:
         interactive_repl(
             model=model_name,
             search_mode=search_mode,
-            speak_enabled=speak_enabled,
-            voice_engine=voice_engine
+            speak_enabled=speak_enabled
         )
 
 

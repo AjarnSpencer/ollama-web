@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "ollama-web"
 version = "1.0.0"
-description = "Universal live web search, deep table scraping, and voice CLI/proxy for Ollama on Linux, macOS, and Windows."
+description = "Universal live web search, deep HTML table scraper, desktop GUI proxy daemon, and MCP server for Ollama on Linux, macOS, and Windows."
 readme = "README.md"
 authors = [
     { name = "Cicada & Antigravity Community", email = "dev@cicada.local" }
@@ -17,7 +17,6 @@ dependencies = [
     "beautifulsoup4>=4.11.0",
     "lxml>=4.9.0",
     "ddgs>=1.0.0",
-    "edge-tts>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -25,9 +24,13 @@ proxy = [
     "fastapi>=0.100.0",
     "uvicorn>=0.22.0",
 ]
+speak = [
+    "ollama-speak>=1.0.0",
+]
 all = [
     "fastapi>=0.100.0",
     "uvicorn>=0.22.0",
+    "ollama-speak>=1.0.0",
 ]
 
 [project.scripts]

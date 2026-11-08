@@ -8,6 +8,7 @@ import sys
 import json
 from pathlib import Path
 
+
 def get_config_dir() -> Path:
     if sys.platform == "win32":
         appdata = os.environ.get("APPDATA")
@@ -18,19 +19,21 @@ def get_config_dir() -> Path:
     cfg_dir.mkdir(parents=True, exist_ok=True)
     return cfg_dir
 
+
 def get_config_file() -> Path:
     return get_config_dir() / "config.json"
+
 
 DEFAULT_CONFIG = {
     "default_model": None,
     "search_mode": "auto",
     "num_ctx": 16384,
     "max_search_results": 5,
-    "voice_enabled": True,
-    "voice_engine": "edge",
+    "speak_enabled": False,
     "first_run_completed": False,
     "api_keys": {}
 }
+
 
 def load_config() -> dict:
     cfg_file = get_config_file()
@@ -44,6 +47,7 @@ def load_config() -> dict:
             return merged
     except Exception:
         return dict(DEFAULT_CONFIG)
+
 
 def save_config(cfg: dict) -> None:
     cfg_file = get_config_file()

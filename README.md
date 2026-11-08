@@ -5,9 +5,9 @@
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-orange.svg)](https://ollama.ai/)
 [![Zero API Keys](https://img.shields.io/badge/API%20Keys-Zero%20Required-green.svg)](#zero-key-architecture)
 
-> **Universal live web search, deep table scraping, and spoken audio engine for any local Ollama model on Linux, macOS, and Windows.**
+> **Universal live web search, deep HTML table scraper, desktop GUI proxy daemon, and MCP server for Ollama on Linux, macOS, and Windows.**
 
-`ollama-web` bridges the gap between local AI and the live internet. It works universally across **any model** you have downloaded locally (`llama3.1`, `dolphin-llama3`, `gemma2`, `qwen2.5`, `mistral`, etc.), requires **zero API keys**, converts sports scores and fixture lists into structured markdown tables, speaks answers aloud, and provides a **transparent proxy daemon** so desktop GUI apps (like Chatbox, LibreChat, and Open WebUI) get real-time internet search out of the box.
+`ollama-web` bridges the gap between local AI and the live internet. It works universally across **any model** you have downloaded locally (`llama3.1`, `dolphin-llama3`, `gemma2`, `qwen2.5`, `mistral`, etc.), requires **zero API keys**, converts sports scores and fixture lists into structured markdown tables, and provides a **transparent proxy daemon** so desktop GUI apps (like Chatbox, LibreChat, and Open WebUI) get real-time internet search out of the box.
 
 ---
 
@@ -17,8 +17,8 @@
 - **Interactive First-Run Setup:** If you don't specify a model, an interactive numbered menu shows your local models and lets you select a default with one keystroke, remembered across sessions.
 - **Zero API Key Requirement:** Combines DuckDuckGo and Google News RSS out of the box. Zero accounts, zero credit cards, zero rate-limit blocks.
 - **Deep HTML Table & JavaScript Scraper:** Automatically converts HTML tables into clean Markdown tables, and falls back to Jina Reader (`r.jina.ai`) for JavaScript-rendered scoreboards.
-- **Universal Neural Voice Out of the Box:** Speaks concise summaries aloud via **Microsoft Edge-TTS** (`en-GB-RyanNeural`, `th-TH-NiwatNeural`, `zh-CN-YunxiNeural`, etc.) with zero setup, zero keys, and zero local model weights.
-- **Optional Local Voice Acceleration:** Easily connects to your local **Piper**, **Kokoro-82M**, or `ai-say` setup via `--local-voice`.
+- **Zero Bloat for Pure Search Users:** Core package requires only lightweight HTTP and parsing libraries (`requests`, `beautifulsoup4`, `lxml`, `ddgs`). Fast installs with zero heavy multimedia dependencies.
+- **Unix Composable Voice:** Seamlessly pairs with companion [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak) for multilingual spoken readout via pipes or `--speak`.
 - **Syntax Guardrails:** Proactively detects common CLI slip-ups like unclosed quotes (`"`) or accidental `-m web` flags without crashing.
 - **Transparent Desktop GUI Proxy (`--proxy`):** Runs a lightweight local proxy on `127.0.0.1:11435`. Point any Ollama GUI client (Ollama Desktop, Chatbox, LibreChat, Open WebUI) to port 11435 for instant live web search.
 - **Native MCP Server (`--mcp`):** Plugs directly into Claude Desktop, Cursor, and Antigravity as a Model Context Protocol tool provider.
@@ -32,6 +32,11 @@
 pip install --upgrade ollama-web
 ```
 *(Or use `pipx install ollama-web` for isolated environment installation).*
+
+To install with the companion voice engine:
+```bash
+pip install --upgrade "ollama-web[speak]"
+```
 
 ### Option 2: One-Line Installer Script
 **Linux & macOS:**
@@ -83,55 +88,29 @@ ollama-web
 Inside the interactive prompt:
 - `/model <name>` — Switch the active local model on the fly
 - `/models` — List all local Ollama models and their parameters
-- `/voice` — Toggle spoken voice readout on/off
+- `/speak` — Toggle companion spoken voice readout on/off
 - `/clear` — Clear conversational context
 - `/exit` — Quit
 
-### 5. Audio Control Options
-To run queries silently without spoken output:
-```bash
-ollama-web --mute "Summarize the latest financial news"
-```
-To use your local TTS acceleration (Piper / Kokoro / `ai-say`):
-```bash
-ollama-web --local-voice "Summarize today's headlines"
-```
-
 ---
 
-## 🗣️ Voice Output Engine (Universal Out-of-the-Box TTS)
+## 🗣️ Companion Voice Integration (ollama-speak)
 
-`ollama-web` features a built-in, cross-platform spoken audio engine engineered to work **self-contained and out of the box for anyone who downloads it**, without requiring local model weights, C++ compilation, or background speech daemons.
+To maintain a clean separation of concerns and zero dependency bloat for pure search users, spoken voice capabilities are packaged separately in [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak).
 
-### Out of the Box Backend: Microsoft Edge-TTS
-- **Zero API Keys and Zero Local Model Downloads:** Powered directly by `edge-tts>=7.0.0`, providing high-fidelity neural voices across 75+ languages.
-- **Intelligent Multilingual Script Routing:**
-  - **English and Latin:** Warm British Baritone (`en-GB-RyanNeural`) or American (`en-US-GuyNeural`).
-  - **Thai:** Native Thai neural voice (`th-TH-NiwatNeural`), completely eliminating phonetic spelling bugs or raw Unicode artifacts.
-  - **Chinese / Japanese / Korean:** `zh-CN-YunxiNeural`, `ja-JP-NanamiNeural`, `ko-KR-SunHiNeural`.
-  - **Spanish / French / German:** `es-ES-AlvaroNeural`, `fr-FR-HenriNeural`, `de-DE-ConradNeural`.
-- **Concise Spoken Summaries:** Spoken audio delivers a conversational 80-word synopsis of the findings, leaving large markdown tables, links, and code blocks cleanly formatted on screen.
-
-### Native System Audio Players
-To guarantee zero-friction playback without requiring heavy Python audio bindings (like PyAudio or PortAudio), `ollama-web` uses the native audio tools already present on your operating system:
-- **macOS:** Native `afplay` (pre-installed on every Mac, plays MP3 and WAV instantly).
-- **Windows:** Native PowerShell Media Player (`WMPlayer.OCX` / `System.Media.SoundPlayer` built into Windows 7, 8, 10, and 11).
-- **Linux:** Automatically detects and plays through `mpv`, `ffplay` (ffmpeg), `mpg123`, `cvlc`, `pw-play` (PipeWire), or `paplay` (PulseAudio).
-
-### Connecting Local Piper or Kokoro TTS (Optional Acceleration)
-If you run a local offline TTS setup (such as Piper, Kokoro-82M, or an `ai-say` workstation wrapper) and wish to prioritize your local hardware:
-1. **Command Line Flag:**
+### Using with ollama-speak
+1. **Unix Pipe (Recommended):**
    ```bash
-   ollama-web --local-voice "Explain the theory of relativity"
+   ollama-web "Latest news on James Webb Space Telescope" | ollama-speak
    ```
-2. **Persistent Configuration:**
-   Set `"voice_engine": "local"` in your config file (`~/.config/ollama-web/config.json` on Linux/macOS or `%APPDATA%\ollama-web\config.json` on Windows):
-   ```json
-   {
-     "voice_engine": "local"
-   }
+2. **Command Line Flag:**
+   ```bash
+   ollama-web --speak "What is quantum computing?"
    ```
-   *Note: Even when `--local-voice` is enabled, non-Latin prompts (such as Thai or Japanese) are automatically routed to Edge-TTS to protect local English-only checkpoints from phoneme spelling errors.*
+3. **Piping Any Ollama Model to Speech:**
+   ```bash
+   ollama run llama3 "Tell me a short bedtime story" | ollama-speak
+   ```
 
 ---
 
@@ -182,8 +161,7 @@ Configuration is stored in `~/.config/ollama-web/config.json` (or `%APPDATA%\oll
   "search_mode": "auto",
   "num_ctx": 16384,
   "max_search_results": 5,
-  "voice_enabled": true,
-  "voice_engine": "edge"
+  "speak_enabled": false
 }
 ```
 
