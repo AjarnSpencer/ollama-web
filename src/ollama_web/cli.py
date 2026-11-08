@@ -48,7 +48,7 @@ def query_ollama(
     enable_thinking: bool = False,
     max_results: int = 5,
     speak_enabled: bool = True,
-    voice_engine: str = "auto"
+    voice_engine: str = "edge"
 ) -> str:
     user_prompt = sanitize_terminal_input(user_prompt)
 
@@ -140,7 +140,7 @@ def query_ollama(
     return reply_str
 
 
-def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = True, voice_engine: str = "auto"):
+def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = True, voice_engine: str = "edge"):
     caps = get_model_capabilities(model)
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}")
     print(f"{C_BOLD} 🌐 ollama-web Interactive Terminal ({model}){C_RESET}")
@@ -214,6 +214,8 @@ def main():
     parser.add_argument("--list-models", "-l", action="store_true", help="List available local Ollama models")
     parser.add_argument("--no-search", action="store_true", help="Disable automatic live web search")
     parser.add_argument("--mute", "-q", action="store_true", help="Mute spoken audio output")
+    parser.add_argument("--local-voice", action="store_true", help="Use local voice engine (Kokoro/Piper/ai-say) instead of default Edge-TTS")
+    parser.add_argument("--voice-engine", default=None, choices=["edge", "local", "kokoro", "piper", "off"], help="Select voice engine (default: edge)")
     parser.add_argument("--think", action="store_true", help="Enable reasoning thinking output if supported")
     parser.add_argument("prompt", nargs="*", help="Model name and/or search query")
 
@@ -280,8 +282,17 @@ def main():
         config["first_run_completed"] = True
         save_config(config)
 
-    speak_enabled = not args.mute and config.get("voice_enabled", True)
-    voice_engine = config.get("voice_engine", "auto")
+    if args.mute or args.voice_engine == "off":
+        speak_enabled = False
+        voice_engine = "off"
+    else:
+        speak_enabled = config.get("voice_enabled", True)
+        if args.local_voice:
+            voice_engine = "local"
+        elif args.voice_engine:
+            voice_engine = args.voice_engine
+        else:
+            voice_engine = config.get("voice_engine", "edge")
 
     # Proactive quote warnings on single-turn prompt
     if prompt_parts:

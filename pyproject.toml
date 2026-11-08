@@ -17,6 +17,7 @@ dependencies = [
     "beautifulsoup4>=4.11.0",
     "lxml>=4.9.0",
     "ddgs>=1.0.0",
+    "edge-tts>=7.0.0",
 ]
 
 [project.optional-dependencies]
@@ -34,9 +35,9 @@ ollama-web = "ollama_web.cli:main"
 oweb = "ollama_web.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/cicada-dgx/ollama-web"
-Repository = "https://github.com/cicada-dgx/ollama-web"
-Issues = "https://github.com/cicada-dgx/ollama-web/issues"
+Homepage = "https://github.com/AjarnSpencer/ollama-web"
+Repository = "https://github.com/AjarnSpencer/ollama-web"
+Issues = "https://github.com/AjarnSpencer/ollama-web/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ollama_web"]

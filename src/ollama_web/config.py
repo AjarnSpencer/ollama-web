@@ -27,7 +27,7 @@ DEFAULT_CONFIG = {
     "num_ctx": 16384,
     "max_search_results": 5,
     "voice_enabled": True,
-    "voice_engine": "auto",
+    "voice_engine": "edge",
     "first_run_completed": False,
     "api_keys": {}
 }

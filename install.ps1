@@ -12,7 +12,7 @@ if (-not $python) {
 }
 
 Write-Host "→ Installing ollama-web package via pip..." -ForegroundColor Green
-python -m pip install --upgrade --user git+https://github.com/cicada-dgx/ollama-web.git
+python -m pip install --upgrade --user git+https://github.com/AjarnSpencer/ollama-web.git
 
 Write-Host "==================================================" -ForegroundColor Cyan
 Write-Host " ✓ Installation complete!" -ForegroundColor Green

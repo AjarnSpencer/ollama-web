@@ -19,10 +19,10 @@ fi
 # Detect pipx or pip
 if command -v pipx >/dev/null 2>&1; then
     echo "→ Installing via pipx..."
-    pipx install --upgrade ollama-web || pipx install --upgrade git+https://github.com/cicada-dgx/ollama-web.git
+    pipx install --upgrade git+https://github.com/AjarnSpencer/ollama-web.git || pipx install --upgrade ollama-web
 else
     echo "→ Installing via user pip..."
-    $PY_BIN -m pip install --user --upgrade git+https://github.com/cicada-dgx/ollama-web.git || $PY_BIN -m pip install --user --upgrade ollama-web
+    $PY_BIN -m pip install --user --upgrade git+https://github.com/AjarnSpencer/ollama-web.git || $PY_BIN -m pip install --user --upgrade ollama-web
 fi
 
 echo "=================================================="

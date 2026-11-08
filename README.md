@@ -17,14 +17,15 @@
 - **Interactive First-Run Setup:** If you don't specify a model, an interactive numbered menu shows your local models and lets you select a default with one keystroke, remembered across sessions.
 - **Zero API Key Requirement:** Combines DuckDuckGo and Google News RSS out of the box. Zero accounts, zero credit cards, zero rate-limit blocks.
 - **Deep HTML Table & JavaScript Scraper:** Automatically converts HTML tables into clean Markdown tables, and falls back to Jina Reader (`r.jina.ai`) for JavaScript-rendered scoreboards.
+- **Universal Neural Voice Out of the Box:** Speaks concise summaries aloud via **Microsoft Edge-TTS** (`en-GB-RyanNeural`, `th-TH-NiwatNeural`, `zh-CN-YunxiNeural`, etc.) with zero setup, zero keys, and zero local model weights.
+- **Optional Local Voice Acceleration:** Easily connects to your local **Piper**, **Kokoro-82M**, or `ai-say` setup via `--local-voice`.
 - **Syntax Guardrails:** Proactively detects common CLI slip-ups like unclosed quotes (`"`) or accidental `-m web` flags without crashing.
 - **Transparent Desktop GUI Proxy (`--proxy`):** Runs a lightweight local proxy on `127.0.0.1:11435`. Point any Ollama GUI client (Ollama Desktop, Chatbox, LibreChat, Open WebUI) to port 11435 for instant live web search.
-- **Cross-Platform Voice TTS:** Speaks concise summaries aloud via **Kokoro-82M / Piper** on Linux, **`say`** on macOS, and **System.Speech SAPI** on Windows.
 - **Native MCP Server (`--mcp`):** Plugs directly into Claude Desktop, Cursor, and Antigravity as a Model Context Protocol tool provider.
 
 ---
 
-## 🚀 Quickstart & Installation
+## 🚀 Quickstart and Installation
 
 ### Option 1: Via PyPI (Recommended for Python users)
 ```bash
@@ -35,16 +36,16 @@ pip install --upgrade ollama-web
 ### Option 2: One-Line Installer Script
 **Linux & macOS:**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/cicada-dgx/ollama-web/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AjarnSpencer/ollama-web/main/install.sh | bash
 ```
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/cicada-dgx/ollama-web/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/AjarnSpencer/ollama-web/main/install.ps1 | iex
 ```
 
 ### Option 3: Standalone Single-File Binaries (Zero Python Required)
-Download the standalone executable for your operating system from the [Latest Releases](https://github.com/cicada-dgx/ollama-web/releases):
+Download the standalone executable for your operating system from the [Latest Releases](https://github.com/AjarnSpencer/ollama-web/releases):
 - **Windows:** `ollama-web-windows-x64.exe`
 - **macOS:** `ollama-web-macos-universal`
 - **Linux:** `ollama-web-linux-x86_64` / `ollama-web-linux-arm64`
@@ -86,11 +87,51 @@ Inside the interactive prompt:
 - `/clear` — Clear conversational context
 - `/exit` — Quit
 
-### 5. Audio Mute Option
-To prevent spoken audio readout for a single query:
+### 5. Audio Control Options
+To run queries silently without spoken output:
 ```bash
 ollama-web --mute "Summarize the latest financial news"
 ```
+To use your local TTS acceleration (Piper / Kokoro / `ai-say`):
+```bash
+ollama-web --local-voice "Summarize today's headlines"
+```
+
+---
+
+## 🗣️ Voice Output Engine (Universal Out-of-the-Box TTS)
+
+`ollama-web` features a built-in, cross-platform spoken audio engine engineered to work **self-contained and out of the box for anyone who downloads it**, without requiring local model weights, C++ compilation, or background speech daemons.
+
+### Out of the Box Backend: Microsoft Edge-TTS
+- **Zero API Keys and Zero Local Model Downloads:** Powered directly by `edge-tts>=7.0.0`, providing high-fidelity neural voices across 75+ languages.
+- **Intelligent Multilingual Script Routing:**
+  - **English and Latin:** Warm British Baritone (`en-GB-RyanNeural`) or American (`en-US-GuyNeural`).
+  - **Thai:** Native Thai neural voice (`th-TH-NiwatNeural`), completely eliminating phonetic spelling bugs or raw Unicode artifacts.
+  - **Chinese / Japanese / Korean:** `zh-CN-YunxiNeural`, `ja-JP-NanamiNeural`, `ko-KR-SunHiNeural`.
+  - **Spanish / French / German:** `es-ES-AlvaroNeural`, `fr-FR-HenriNeural`, `de-DE-ConradNeural`.
+- **Concise Spoken Summaries:** Spoken audio delivers a conversational 80-word synopsis of the findings, leaving large markdown tables, links, and code blocks cleanly formatted on screen.
+
+### Native System Audio Players
+To guarantee zero-friction playback without requiring heavy Python audio bindings (like PyAudio or PortAudio), `ollama-web` uses the native audio tools already present on your operating system:
+- **macOS:** Native `afplay` (pre-installed on every Mac, plays MP3 and WAV instantly).
+- **Windows:** Native PowerShell Media Player (`WMPlayer.OCX` / `System.Media.SoundPlayer` built into Windows 7, 8, 10, and 11).
+- **Linux:** Automatically detects and plays through `mpv`, `ffplay` (ffmpeg), `mpg123`, `cvlc`, `pw-play` (PipeWire), or `paplay` (PulseAudio).
+
+### Connecting Local Piper or Kokoro TTS (Optional Acceleration)
+If you run a local offline TTS setup (such as Piper, Kokoro-82M, or an `ai-say` workstation wrapper) and wish to prioritize your local hardware:
+1. **Command Line Flag:**
+   ```bash
+   ollama-web --local-voice "Explain the theory of relativity"
+   ```
+2. **Persistent Configuration:**
+   Set `"voice_engine": "local"` in your config file (`~/.config/ollama-web/config.json` on Linux/macOS or `%APPDATA%\ollama-web\config.json` on Windows):
+   ```json
+   {
+     "voice_engine": "local"
+   }
+   ```
+   *Note: Even when `--local-voice` is enabled, non-Latin prompts (such as Thai or Japanese) are automatically routed to Edge-TTS to protect local English-only checkpoints from phoneme spelling errors.*
 
 ---
 
@@ -142,7 +183,7 @@ Configuration is stored in `~/.config/ollama-web/config.json` (or `%APPDATA%\oll
   "num_ctx": 16384,
   "max_search_results": 5,
   "voice_enabled": true,
-  "voice_engine": "auto"
+  "voice_engine": "edge"
 }
 ```
 
@@ -150,7 +191,7 @@ Configuration is stored in `~/.config/ollama-web/config.json` (or `%APPDATA%\oll
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome! Feel free to check the [Issues page](https://github.com/cicada-dgx/ollama-web/issues).
+Contributions, issues, and feature requests are welcome! Feel free to check the [Issues page](https://github.com/AjarnSpencer/ollama-web/issues).
 
 ## 📄 License
 

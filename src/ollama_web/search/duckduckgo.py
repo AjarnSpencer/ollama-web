@@ -3,12 +3,21 @@ DuckDuckGo Zero-Key Search Provider using ddgs.
 """
 
 from typing import List
-from ddgs import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        DDGS = None
+
 from .base import SearchProvider, SearchHit
 
 class DuckDuckGoProvider(SearchProvider):
     def search(self, query: str, max_results: int = 5) -> List[SearchHit]:
         hits = []
+        if DDGS is None:
+            return hits
         seen = set()
         try:
             ddgs = DDGS()
