@@ -1,0 +1,74 @@
+name: Build, Package & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-pypi:
+    name: Build & Publish to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install build tools
+        run: pip install --upgrade build twine
+      - name: Build wheel and sdist
+        run: python -m build
+      - name: Publish to PyPI
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload --skip-existing dist/*
+
+  build-binaries:
+    name: Build Standalone Binaries
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: ollama-web-linux-x86_64
+            binary_name: ollama-web
+          - os: macos-latest
+            artifact_name: ollama-web-macos-universal
+            binary_name: ollama-web
+          - os: windows-latest
+            artifact_name: ollama-web-windows-x64.exe
+            binary_name: ollama-web.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies & PyInstaller
+        run: |
+          pip install --upgrade pyinstaller
+          pip install .
+      - name: Build standalone executable
+        run: |
+          pyinstaller --onefile --name ollama-web src/ollama_web/__main__.py
+      - name: Rename and Stage Binary
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            mv dist/ollama-web.exe dist/${{ matrix.artifact_name }}
+          else
+            chmod +x dist/ollama-web
+            mv dist/ollama-web dist/${{ matrix.artifact_name }}
+          fi
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/${{ matrix.artifact_name }}
