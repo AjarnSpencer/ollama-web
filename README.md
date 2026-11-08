@@ -18,8 +18,9 @@
 - **Zero API Key Requirement:** Combines DuckDuckGo and Google News RSS out of the box. Zero accounts, zero credit cards, zero rate-limit blocks.
 - **Deep HTML Table & JavaScript Scraper:** Automatically converts HTML tables into clean Markdown tables, and falls back to Jina Reader (`r.jina.ai`) for JavaScript-rendered scoreboards.
 - **Explicit URL Deep Reader:** Pass any URL in your prompt to scrape full page text (up to 7,500 chars) directly into your model context.
-- **Zero Bloat for Pure Search Users:** Core package requires only lightweight HTTP and parsing libraries (`requests`, `beautifulsoup4`, `lxml`, `ddgs`). Fast installs with zero heavy multimedia dependencies.
-- **Unix Composable Voice:** Seamlessly pairs with companion [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak) for multilingual spoken readout via pipes or `--speak`.
+- **Real-Time Terminal Streaming (Never Stare at a Blank Screen):** Live search queries and page-reading progress appear immediately so you always know what the tool is doing. Model tokens stream live token-by-token directly to your terminal—fully visible, readable, and copy-pasteable.
+- **Zero-Flag Spoken Audio:** Answers are automatically spoken aloud as soon as generation completes when the lightweight companion `ollama-speak` is installed. No complex pipes or extra flags needed! If you prefer silence, simply pass `-q` or `--mute`.
+- **Unix Composable Voice:** Seamlessly pairs with companion [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak) for multilingual spoken readout via pipes (`| ollama-speak`) or automatic background narration. Pipes never swallow text!
 - **Syntax Guardrails:** Proactively detects common CLI slip-ups like unclosed quotes (`"`) or accidental `-m web` flags without crashing.
 - **Transparent Desktop GUI Proxy (`--proxy`):** Runs a lightweight local proxy on `127.0.0.1:11435`. Point any Ollama GUI client (Ollama Desktop, Chatbox, LibreChat, Open WebUI) to port 11435 for instant live web search.
 - **Native MCP Server (`--mcp`):** Plugs directly into Claude Desktop, Cursor, and Antigravity as a Model Context Protocol tool provider.
@@ -67,12 +68,13 @@ Download the standalone executable for your operating system from the [Latest Re
 | Flag | Short | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `--model MODEL` | `-m` | `config.default_model` | Specify target Ollama model (fuzzy-matched against local models) |
+| `--mute` | `-q`, `--quiet` | `False` | Mute spoken audio output (silent text-only terminal mode) |
+| `--speak` | `-s` | `True` (auto) | Force spoken voice output (voice is already ON by default if companion is installed) |
 | `--proxy` | | `False` | Launch transparent desktop GUI proxy daemon |
 | `--port PORT` | | `11435` | Custom TCP port for the proxy daemon |
 | `--mcp` | | `False` | Run as standard Model Context Protocol (stdio MCP) server |
 | `--list-models` | `-l` | | Print table of all locally installed Ollama models and exit |
 | `--no-search` | | `False` | Query model directly without live web search |
-| `--speak` | `-s` | `False` | Speak reply aloud using companion `ollama-speak` |
 | `--think` | | `False` | Enable reasoning thinking stream (DeepSeek-R1, QwQ, etc.) |
 | `-h`, `--help` | | | Show full help manual and flag descriptions |
 
@@ -80,16 +82,25 @@ Download the standalone executable for your operating system from the [Latest Re
 
 ## 💡 Practical Tutorials and Workflows
 
-### Tutorial 1 — Quick Real-Time Web Search
+### Tutorial 1 — Quick Real-Time Web Search (Text + Automatic Voice)
 Run a live web search using your configured default model:
 ```bash
 ollama-web "What are the latest breakthroughs in fusion energy this week?"
 ```
 `ollama-web` will:
 1. Search live web sources and Google News RSS.
-2. Scrape top resulting pages.
-3. Inject parsed facts into your model context.
-4. Stream tokens directly to your terminal.
+2. Scrape top resulting pages with live status updates on stderr so you know what is happening.
+3. Stream tokens directly to your terminal in real time (fully readable and copy-pasteable).
+4. Automatically speak the summary aloud when finished if companion `ollama-speak` is installed.
+
+---
+
+### Tutorial 2 — Silent Terminal Mode (`-q` / `--mute`)
+If you want to read in silence without audio playback:
+```bash
+ollama-web -q "Latest developments in quantum computing"
+```
+Or use `--mute` anytime.
 
 ---
 
@@ -138,7 +149,7 @@ ollama-web --no-search -m llama3.1 "Write a Python script to sort a dictionary b
 
 ---
 
-### Tutorial 7 — Interactive REPL Session
+### Tutorial 8 — Interactive REPL Session
 Running `ollama-web` without arguments launches an interactive shell with conversation memory:
 ```bash
 ollama-web
@@ -146,28 +157,27 @@ ollama-web
 Inside the interactive prompt:
 - `/model <name>` — Switch the active local model on the fly
 - `/models` — List all local Ollama models and their parameters
-- `/speak` — Toggle companion voice readout on or off
+- `/mute` or `/speak` — Toggle companion voice audio on or off
 - `/clear` — Reset conversational memory
 - `/exit` — Quit the session
 
 ---
 
-### Tutorial 8 — Voice Readout with `ollama-speak`
-Pair with [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak) for instant speech synthesis across 75+ languages:
+### Tutorial 9 — Spoken Voice with Companion `ollama-speak`
+`ollama-web` pairs natively with [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak):
 
-**Method A — Unix Pipe (Recommended):**
+**Method A — Zero-Flag Automatic Voice:**
+Just run `ollama-web "..."`. The terminal prints text live while you listen to the spoken answer.
+
+**Method B — Unix Pipe (Zero-Swallow Output):**
 ```bash
 ollama-web "Who won yesterday's basketball matches?" | ollama-speak
 ```
-
-**Method B — Command Flag:**
-```bash
-ollama-web --speak "Give me a brief summary of today's tech news"
-```
+`ollama-speak` mirrors the text directly to `stdout` so pipes never swallow your screen output.
 
 ---
 
-### Tutorial 9 — Transparent Desktop GUI Proxy (`--proxy`)
+### Tutorial 10 — Transparent Desktop GUI Proxy (`--proxy`)
 Enable live web search inside your favorite Ollama desktop apps (Chatbox, LibreChat, Open WebUI, Jan.ai):
 
 1. **Start the proxy in a background terminal:**
@@ -181,7 +191,7 @@ Enable live web search inside your favorite Ollama desktop apps (Chatbox, LibreC
 
 ---
 
-### Tutorial 10 — Model Context Protocol (MCP) in Claude Desktop
+### Tutorial 11 — Model Context Protocol (MCP) in Claude Desktop
 To expose web search tools directly to Claude Desktop, Cursor, or Antigravity, add this to your `claude_desktop_config.json`:
 ```json
 {
@@ -206,7 +216,7 @@ Your defaults are saved in `~/.config/ollama-web/config.json` (or `%APPDATA%\oll
   "search_mode": "auto",
   "num_ctx": 16384,
   "max_search_results": 5,
-  "speak_enabled": false
+  "voice_enabled": true
 }
 ```
 

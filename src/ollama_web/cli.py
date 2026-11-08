@@ -150,13 +150,13 @@ def query_ollama(
     return reply_str
 
 
-def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = False):
+def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = True):
     caps = get_model_capabilities(model)
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}")
     print(f"{C_BOLD} 🌐 ollama-web Interactive Terminal ({model}){C_RESET}")
     print(f" Web Search : {C_GREEN}{search_mode.upper()}{C_RESET}")
-    print(f" Voice TTS  : {C_GREEN}{'ON (ollama-speak)' if speak_enabled else 'OFF'}{C_RESET}")
-    print(f" Commands   : {C_YELLOW}/model <name>{C_RESET}, {C_YELLOW}/models{C_RESET}, {C_YELLOW}/search <q>{C_RESET}, {C_YELLOW}/speak{C_RESET}, {C_YELLOW}/clear{C_RESET}, {C_YELLOW}/exit{C_RESET}")
+    print(f" Spoken Audio: {C_GREEN}{'ON (ollama-speak)' if speak_enabled else 'MUTED'}{C_RESET}")
+    print(f" Commands   : {C_YELLOW}/model <name>{C_RESET}, {C_YELLOW}/models{C_RESET}, {C_YELLOW}/search <q>{C_RESET}, {C_YELLOW}/mute{C_RESET}, {C_YELLOW}/clear{C_RESET}, {C_YELLOW}/exit{C_RESET}")
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}\n")
 
     history = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -187,9 +187,9 @@ def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool 
                 else:
                     print(f"{C_YELLOW}Model '{req}' not found.{C_RESET}\n")
                 continue
-            if prompt in ("/speak", "/voice"):
+            if prompt in ("/speak", "/voice", "/mute"):
                 speak_enabled = not speak_enabled
-                print(f"{C_GREEN}Spoken output: {'ENABLED (ollama-speak)' if speak_enabled else 'DISABLED'}{C_RESET}\n")
+                print(f"{C_GREEN}Spoken output: {'ENABLED (ollama-speak)' if speak_enabled else 'MUTED'}{C_RESET}\n")
                 continue
 
             # 1. Clean accidental CLI invocations pasted into the REPL
@@ -244,7 +244,8 @@ def main():
     parser.add_argument("--mcp", action="store_true", help="Run as Model Context Protocol (MCP) stdio server")
     parser.add_argument("--list-models", "-l", action="store_true", help="List available local Ollama models")
     parser.add_argument("--no-search", action="store_true", help="Disable automatic live web search")
-    parser.add_argument("--speak", "-s", action="store_true", help="Speak response aloud via companion ollama-speak")
+    parser.add_argument("--mute", "-q", "--quiet", action="store_true", help="Mute spoken audio output (silent text-only terminal mode)")
+    parser.add_argument("--speak", "-s", action="store_true", help="Force spoken voice output (voice is ON by default if companion is present)")
     parser.add_argument("--think", action="store_true", help="Enable reasoning thinking output if supported")
     parser.add_argument("prompt", nargs="*", help="Model name and/or search query")
 
@@ -318,7 +319,14 @@ def main():
             config["first_run_completed"] = True
             save_config(config)
 
-    speak_enabled = args.speak or config.get("speak_enabled", False)
+    # Voice is enabled by default for zero-flag ease of use
+    default_voice = config.get("voice_enabled", config.get("speak_enabled", True))
+    if args.mute:
+        speak_enabled = False
+    elif args.speak:
+        speak_enabled = True
+    else:
+        speak_enabled = default_voice
 
     # Proactive quote warnings on single-turn prompt
     if prompt_parts:
