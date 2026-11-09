@@ -50,7 +50,7 @@ def test_voice_companion():
         print("✓ OK (Found host local voice daemon ai-say)")
         return True
     else:
-        print("⚠️ Warning (ollama-speak not installed; run 'pip install ollama-speak' for voice)")
+        print("⚠️ Warning (ollama-speak not installed; install via: curl -fsSL https://raw.githubusercontent.com/AjarnSpencer/ollama-speak/main/install.sh | bash)")
         return True
 
 def main():

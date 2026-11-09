@@ -29,19 +29,10 @@
 
 ## 🚀 Quickstart and Installation
 
-### Option 1 — Via PyPI (Recommended for Python users)
-```bash
-pip install --upgrade ollama-web
-```
-*(Or use `pipx install ollama-web` for isolated environment installation).*
+### Option 1 (Recommended) — One-Line Turnkey Installer
+Works cleanly on fresh Linux, macOS, and WSL systems without requiring manual virtual environments or tripping PEP 668 system python locks.
 
-To install with the companion voice engine:
-```bash
-pip install --upgrade "ollama-web[speak]"
-```
-
-### Option 2 — One-Line Installer Script
-**Linux & macOS:**
+**Linux and macOS:**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AjarnSpencer/ollama-web/main/install.sh | bash
 ```
@@ -51,11 +42,41 @@ curl -fsSL https://raw.githubusercontent.com/AjarnSpencer/ollama-web/main/instal
 irm https://raw.githubusercontent.com/AjarnSpencer/ollama-web/main/install.ps1 | iex
 ```
 
+What the turnkey installer does:
+- Sets up an isolated virtual environment in `~/.local/share/ollama-web/venv` (zero system conflicts).
+- Symlinks `ollama-web` and `oweb` launchers into `~/.local/bin/`.
+- Configures user `PATH` if not already set.
+
+---
+
+### Option 2 — Install from GitHub with pipx or pip
+If you prefer managing Python CLI tools via `pipx` (recommended by Python Packaging Authority for standalone tools) or an active virtual environment:
+
+**Using pipx (Recommended for Python users):**
+```bash
+pipx install git+https://github.com/AjarnSpencer/ollama-web.git
+```
+
+**Using pip in a virtual environment:**
+```bash
+pip install git+https://github.com/AjarnSpencer/ollama-web.git
+```
+
+---
+
 ### Option 3 — Standalone Single-File Binaries (Zero Python Required)
 Download the standalone executable for your operating system from the [Latest Releases](https://github.com/AjarnSpencer/ollama-web/releases):
 - **Windows:** `ollama-web-windows-x64.exe`
 - **macOS:** `ollama-web-macos-universal`
 - **Linux:** `ollama-web-linux-x86_64` / `ollama-web-linux-arm64`
+
+---
+
+### 📦 Publishing to PyPI (For Maintainers)
+To unlock global installation via `pip install ollama-web` worldwide:
+1. Build distributions: `python3 -m build` (generates wheels and tarballs in `dist/`).
+2. Upload to PyPI: `twine upload dist/*` with your PyPI token.
+Once published, users can install directly via `pip install --upgrade ollama-web`.
 
 ---
 
