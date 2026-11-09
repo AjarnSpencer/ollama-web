@@ -4,9 +4,19 @@ Diagnostic & Verification Suite for ollama-web.
 Runs automated smoke tests to verify local Ollama connectivity, search backends, and terminal integration.
 """
 
+import os
 import sys
 import json
 import requests
+
+# Auto re-exec into isolated venv if run from bare system python without dependencies
+venv_dir = os.path.expanduser("~/.local/share/ollama-web/venv")
+venv_py = os.path.join(venv_dir, "bin", "python")
+if os.path.exists(venv_py) and sys.prefix != venv_dir:
+    try:
+        import ollama_web
+    except ImportError:
+        os.execv(venv_py, [venv_py] + sys.argv)
 
 def test_ollama_daemon():
     print("[1/3] Checking Ollama daemon connectivity (http://127.0.0.1:11434)...", end=" ", flush=True)
