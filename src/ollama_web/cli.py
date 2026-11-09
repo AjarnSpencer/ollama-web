@@ -247,9 +247,24 @@ def main():
     parser.add_argument("--mute", "-q", "--quiet", action="store_true", help="Mute spoken audio output (silent text-only terminal mode)")
     parser.add_argument("--speak", "-s", action="store_true", help="Force spoken voice output (voice is ON by default if companion is present)")
     parser.add_argument("--think", action="store_true", help="Enable reasoning thinking output if supported")
+    parser.add_argument("--install-hook", action="store_true", help="Install shell hook to seamlessly add web search and voice to native 'ollama run' in terminal")
+    parser.add_argument("--remove-hook", action="store_true", help="Remove terminal shell hook from .bashrc/.zshrc")
     parser.add_argument("prompt", nargs="*", help="Model name and/or search query")
 
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
+    if unknown:
+        args.prompt.extend(unknown)
+
+    # Subcommand: Terminal Hook Management
+    if args.install_hook:
+        from .hook import install_hook
+        install_hook()
+        return
+
+    if args.remove_hook:
+        from .hook import remove_hook
+        remove_hook()
+        return
 
     # Subcommand: MCP Server
     if args.mcp:

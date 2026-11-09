@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ollama-web one-line installer for Linux and macOS
+# ollama-web turnkey installer for Linux and macOS
 set -e
 
 echo "=================================================="
@@ -16,17 +16,24 @@ else
     exit 1
 fi
 
-# Detect pipx or pip
-if command -v pipx >/dev/null 2>&1; then
-    echo "→ Installing via pipx..."
-    pipx install --upgrade git+https://github.com/AjarnSpencer/ollama-web.git || pipx install --upgrade ollama-web
+# Install dependencies and package
+if [ -f "pyproject.toml" ]; then
+    echo "→ Installing from local repository..."
+    $PY_BIN -m pip install --upgrade .
 else
-    echo "→ Installing via user pip..."
-    $PY_BIN -m pip install --user --upgrade git+https://github.com/AjarnSpencer/ollama-web.git || $PY_BIN -m pip install --user --upgrade ollama-web
+    echo "→ Installing from GitHub..."
+    $PY_BIN -m pip install --upgrade git+https://github.com/AjarnSpencer/ollama-web.git
+fi
+
+# Check for companion voice engine
+if ! command -v ollama-speak >/dev/null 2>&1 && ! command -v ospeak >/dev/null 2>&1; then
+    echo "→ Installing local companion voice engine (ollama-speak)..."
+    $PY_BIN -m pip install --upgrade git+https://github.com/AjarnSpencer/ollama-speak.git || true
 fi
 
 echo "=================================================="
 echo " ✓ Installation complete!"
 echo " Run: 'ollama-web \"your search query\"'"
-echo " Or start the GUI proxy: 'ollama-web --proxy'"
+echo " Or install terminal hook for native 'ollama run':"
+echo "      ollama-web --install-hook"
 echo "=================================================="

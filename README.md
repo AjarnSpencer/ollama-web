@@ -68,6 +68,8 @@ Download the standalone executable for your operating system from the [Latest Re
 | Flag | Short | Default | Description |
 | :--- | :--- | :--- | :--- |
 | `--model MODEL` | `-m` | `config.default_model` | Specify target Ollama model (fuzzy-matched against local models) |
+| `--install-hook` | | | Seamlessly add live search and voice to native `ollama run` in your terminal |
+| `--remove-hook` | | | Remove terminal shell hook from `.bashrc` / `.zshrc` |
 | `--mute` | `-q`, `--quiet` | `False` | Mute spoken audio output (silent text-only terminal mode) |
 | `--speak` | `-s` | `True` (auto) | Force spoken voice output (voice is already ON by default if companion is installed) |
 | `--proxy` | | `False` | Launch transparent desktop GUI proxy daemon |
@@ -104,7 +106,32 @@ Or use `--mute` anytime.
 
 ---
 
-### Tutorial 2 — Targeting a Specific Local Model
+### Tutorial 3 — Native Terminal Integration (`ollama-web --install-hook`)
+If you want your standard `ollama` terminal command to automatically gain live web search and voice without changing your habits:
+```bash
+ollama-web --install-hook
+source ~/.bashrc   # or source ~/.zshrc
+```
+Now, whenever you use `ollama` in the terminal:
+- **One-shot prompt with live search + voice:**
+  ```bash
+  ollama run llama3.1 "What are today's top tech headlines?"
+  ```
+- **Direct web search shortcut:**
+  ```bash
+  ollama web "Champions League fixtures this week"
+  ```
+- **Standard Ollama commands:**
+  `ollama list`, `ollama pull`, and interactive sessions continue to pass through directly to the native `ollama` binary without modification.
+
+To remove the hook at any time:
+```bash
+ollama-web --remove-hook
+```
+
+---
+
+### Tutorial 4 — Targeting a Specific Local Model
 You can specify the model either with `-m` or by typing the model name directly as the first argument:
 ```bash
 # Using the -m flag:
@@ -116,7 +143,7 @@ ollama-web qwen2.5:32b "Summarize today's top artificial intelligence headlines"
 
 ---
 
-### Tutorial 3 — Extracting HTML Tables into Markdown
+### Tutorial 5 — Extracting HTML Tables into Markdown
 Ask for tables directly—`ollama-web` automatically converts complex HTML tables from web pages into clean Markdown tables:
 ```bash
 ollama-web -m llama3.1 "Latest 5 English Premier League results and table standings"
@@ -124,7 +151,7 @@ ollama-web -m llama3.1 "Latest 5 English Premier League results and table standi
 
 ---
 
-### Tutorial 4 — Deep Scraping Explicit URLs
+### Tutorial 6 — Deep Scraping Explicit URLs
 If you want your local LLM to read and analyze an exact web article or blog post, simply include the URL in your prompt:
 ```bash
 ollama-web "https://arstechnica.com/science/ Summarize the lead space exploration article"
@@ -133,7 +160,7 @@ ollama-web "https://arstechnica.com/science/ Summarize the lead space exploratio
 
 ---
 
-### Tutorial 5 — Reasoning Models with Thinking Mode (`--think`)
+### Tutorial 7 — Reasoning Models with Thinking Mode (`--think`)
 For reasoning models (like `deepseek-r1`, `qwq`, or thinking-enabled checkpoints), pass `--think` to stream internal reasoning tokens before the final answer:
 ```bash
 ollama-web -m deepseek-r1:14b --think "Analyze the current economic trends from today's market news"
@@ -141,7 +168,7 @@ ollama-web -m deepseek-r1:14b --think "Analyze the current economic trends from 
 
 ---
 
-### Tutorial 6 — Pure Local Inference Without Web Search (`--no-search`)
+### Tutorial 8 — Pure Local Inference Without Web Search (`--no-search`)
 Need to ask your model a general programming or logic question without scraping the web? Pass `--no-search`:
 ```bash
 ollama-web --no-search -m llama3.1 "Write a Python script to sort a dictionary by values"
@@ -149,7 +176,7 @@ ollama-web --no-search -m llama3.1 "Write a Python script to sort a dictionary b
 
 ---
 
-### Tutorial 8 — Interactive REPL Session
+### Tutorial 9 — Interactive REPL Session
 Running `ollama-web` without arguments launches an interactive shell with conversation memory:
 ```bash
 ollama-web
@@ -163,7 +190,7 @@ Inside the interactive prompt:
 
 ---
 
-### Tutorial 9 — Spoken Voice with Companion `ollama-speak`
+### Tutorial 10 — Spoken Voice with Companion `ollama-speak`
 `ollama-web` pairs natively with [`ollama-speak`](https://github.com/AjarnSpencer/ollama-speak):
 
 **Method A — Zero-Flag Automatic Voice:**
@@ -177,7 +204,7 @@ ollama-web "Who won yesterday's basketball matches?" | ollama-speak
 
 ---
 
-### Tutorial 10 — Transparent Desktop GUI Proxy (`--proxy`)
+### Tutorial 11 — Transparent Desktop GUI Proxy (`--proxy`)
 Enable live web search inside your favorite Ollama desktop apps (Chatbox, LibreChat, Open WebUI, Jan.ai):
 
 1. **Start the proxy in a background terminal:**
@@ -191,7 +218,7 @@ Enable live web search inside your favorite Ollama desktop apps (Chatbox, LibreC
 
 ---
 
-### Tutorial 11 — Model Context Protocol (MCP) in Claude Desktop
+### Tutorial 12 — Model Context Protocol (MCP) in Claude Desktop
 To expose web search tools directly to Claude Desktop, Cursor, or Antigravity, add this to your `claude_desktop_config.json`:
 ```json
 {
