@@ -1,5 +1,6 @@
 # 🌐 ollama-web (`oweb`)
 
+[![PyPI version](https://img.shields.io/pypi/v/ollama-web.svg?color=blue)](https://pypi.org/project/ollama-web/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/)
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-orange.svg)](https://ollama.ai/)
@@ -29,7 +30,26 @@
 
 ## 🚀 Quickstart and Installation
 
-### Option 1 (Recommended) — One-Line Turnkey Installer
+### Option 1 — Install via PyPI (Recommended for Python users)
+`ollama-web` is published to the official Python Package Index (PyPI). You can install it directly into any active Python environment:
+
+```bash
+pip install --upgrade ollama-web
+```
+
+Or install in an isolated global CLI environment using `pipx` (recommended by the Python Packaging Authority for standalone command line utilities):
+```bash
+pipx install ollama-web
+```
+
+To install with the companion voice engine (`ollama-speak`):
+```bash
+pip install --upgrade "ollama-web[speak]"
+```
+
+---
+
+### Option 2 — One-Line Turnkey Installer (Zero Configuration)
 Works cleanly on fresh Linux, macOS, and WSL systems without requiring manual virtual environments or tripping PEP 668 system python locks.
 
 **Linux and macOS:**
@@ -49,21 +69,6 @@ What the turnkey installer does:
 
 ---
 
-### Option 2 — Install from GitHub with pipx or pip
-If you prefer managing Python CLI tools via `pipx` (recommended by Python Packaging Authority for standalone tools) or an active virtual environment:
-
-**Using pipx (Recommended for Python users):**
-```bash
-pipx install git+https://github.com/AjarnSpencer/ollama-web.git
-```
-
-**Using pip in a virtual environment:**
-```bash
-pip install git+https://github.com/AjarnSpencer/ollama-web.git
-```
-
----
-
 ### Option 3 — Standalone Single-File Binaries (Zero Python Required)
 Download the standalone executable for your operating system from the [Latest Releases](https://github.com/AjarnSpencer/ollama-web/releases):
 - **Windows:** `ollama-web-windows-x64.exe`
@@ -72,11 +77,16 @@ Download the standalone executable for your operating system from the [Latest Re
 
 ---
 
-### 📦 Publishing to PyPI (For Maintainers)
-To unlock global installation via `pip install ollama-web` worldwide:
-1. Build distributions: `python3 -m build` (generates wheels and tarballs in `dist/`).
-2. Upload to PyPI: `twine upload dist/*` with your PyPI token.
-Once published, users can install directly via `pip install --upgrade ollama-web`.
+### Option 4 — Install from GitHub
+```bash
+pip install git+https://github.com/AjarnSpencer/ollama-web.git
+```
+
+---
+
+### 📦 PyPI Package Information (For Maintainers)
+- **PyPI Release:** [https://pypi.org/project/ollama-web/](https://pypi.org/project/ollama-web/)
+- **Release Automation:** Pushing a version tag (e.g. `git tag v1.0.1 && git push origin v1.0.1`) automatically triggers GitHub Actions (`.github/workflows/release.yml`) to build and publish updates to PyPI.
 
 ---
 
