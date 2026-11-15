@@ -42,6 +42,18 @@ SYSTEM_PROMPT = (
 )
 
 
+def _silence_broken_stdout() -> None:
+    """Redirect stdout to /dev/null after a downstream pipe closes (BrokenPipeError)."""
+    try:
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        try:
+            os.dup2(devnull, sys.stdout.fileno())
+        finally:
+            os.close(devnull)
+    except Exception:
+        pass
+
+
 def query_ollama(
     model: str,
     user_prompt: str,
@@ -53,6 +65,8 @@ def query_ollama(
 ) -> str:
     user_prompt = sanitize_terminal_input(user_prompt)
     is_piped = not sys.stdout.isatty()
+    if is_piped:
+        speak_enabled = False
 
     # 1. Scrape any explicit URLs in the prompt
     explicit_urls = re.findall(r"https?://[^\s)>\]\"']+", user_prompt)
@@ -103,6 +117,7 @@ def query_ollama(
 
     status_cleared = False
     full_reply = []
+    broken_pipe = False
 
     try:
         with requests.post(f"{OLLAMA_HOST}/api/chat", json=payload, stream=True, timeout=300) as r:
@@ -118,11 +133,19 @@ def query_ollama(
                             sys.stderr.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
                             sys.stderr.flush()
                         status_cleared = True
-                    sys.stdout.write(token)
-                    sys.stdout.flush()
+                    try:
+                        sys.stdout.write(token)
+                        sys.stdout.flush()
+                    except BrokenPipeError:
+                        broken_pipe = True
+                        _silence_broken_stdout()
+                        break
                     full_reply.append(token)
                 if chunk.get("done"):
                     break
+    except BrokenPipeError:
+        broken_pipe = True
+        _silence_broken_stdout()
     except KeyboardInterrupt:
         if not status_cleared and not is_piped:
             sys.stderr.write("\r\033[K" + f"{C_MAGENTA}{C_BOLD}[{model}]{C_RESET} ")
@@ -134,23 +157,28 @@ def query_ollama(
             sys.stderr.flush()
         err_msg = f"Ollama error: {e}"
         print(f"\n{C_YELLOW}[!] {err_msg}{C_RESET}", file=sys.stderr)
-        if speak_enabled:
+        if speak_enabled and not broken_pipe:
             speak_text(f"Ollama error on model {model}. {e}")
 
-    sys.stdout.write("\n")
-    sys.stdout.flush()
+    if not broken_pipe:
+        try:
+            sys.stdout.write("\n")
+            sys.stdout.flush()
+        except BrokenPipeError:
+            broken_pipe = True
+            _silence_broken_stdout()
     reply_str = "".join(full_reply).strip()
 
     if reply_str:
         history.append({"role": "user", "content": user_prompt})
         history.append({"role": "assistant", "content": reply_str})
-        if speak_enabled:
+        if speak_enabled and not broken_pipe:
             speak_text(reply_str)
 
     return reply_str
 
 
-def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = True):
+def interactive_repl(model: str, search_mode: str = "auto", speak_enabled: bool = False):
     caps = get_model_capabilities(model)
     print(f"{C_BOLD}{C_CYAN}=================================================================={C_RESET}")
     print(f"{C_BOLD} 🌐 ollama-web Interactive Terminal ({model}){C_RESET}")
@@ -245,7 +273,7 @@ def main():
     parser.add_argument("--list-models", "-l", action="store_true", help="List available local Ollama models")
     parser.add_argument("--no-search", action="store_true", help="Disable automatic live web search")
     parser.add_argument("--mute", "-q", "--quiet", action="store_true", help="Mute spoken audio output (silent text-only terminal mode)")
-    parser.add_argument("--speak", "-s", action="store_true", help="Force spoken voice output (voice is ON by default if companion is present)")
+    parser.add_argument("--speak", "-s", action="store_true", help="Enable spoken voice output via ollama-speak (silent by default)")
     parser.add_argument("--think", action="store_true", help="Enable reasoning thinking output if supported")
     parser.add_argument("--install-hook", action="store_true", help="Install shell hook to seamlessly add web search and voice to native 'ollama run' in terminal")
     parser.add_argument("--remove-hook", action="store_true", help="Remove terminal shell hook from .bashrc/.zshrc")
@@ -334,14 +362,14 @@ def main():
             config["first_run_completed"] = True
             save_config(config)
 
-    # Voice is enabled by default for zero-flag ease of use
-    default_voice = config.get("voice_enabled", config.get("speak_enabled", True))
-    if args.mute:
+    # Text-only by default; spoken output is opt-in (--speak / REPL /speak) and disabled when piped
+    default_voice = config.get("voice_enabled", False)
+    if args.mute or not sys.stdout.isatty():
         speak_enabled = False
     elif args.speak:
         speak_enabled = True
     else:
-        speak_enabled = default_voice
+        speak_enabled = bool(default_voice)
 
     # Proactive quote warnings on single-turn prompt
     if prompt_parts:

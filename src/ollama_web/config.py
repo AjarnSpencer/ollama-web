@@ -29,7 +29,7 @@ DEFAULT_CONFIG = {
     "search_mode": "auto",
     "num_ctx": 16384,
     "max_search_results": 5,
-    "voice_enabled": True,
+    "voice_enabled": False,
     "first_run_completed": False,
     "api_keys": {}
 }
@@ -43,7 +43,7 @@ def load_config() -> dict:
         with open(cfg_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             if "voice_enabled" not in data:
-                data["voice_enabled"] = True
+                data["voice_enabled"] = False
             # Clean up deprecated key
             data.pop("speak_enabled", None)
             merged = dict(DEFAULT_CONFIG)

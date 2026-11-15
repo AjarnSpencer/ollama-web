@@ -274,7 +274,7 @@ Your defaults are saved in `~/.config/ollama-web/config.json` (or `%APPDATA%\oll
   "search_mode": "auto",
   "num_ctx": 16384,
   "max_search_results": 5,
-  "voice_enabled": true
+  "voice_enabled": false
 }
 ```
 
